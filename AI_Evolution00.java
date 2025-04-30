@@ -7,9 +7,9 @@ import java.util.ArrayList;
 
 import javax.swing.JFrame;
 
-public class AI_Evolution00 extends Canvas
+public class AI_Evolution extends Canvas
 {
-	private static final long serialVersionUID = 6540949713898263522L;
+	private static final long serialVersionUID = 2L;
 	
 	/** The width of {@link #frame}. */
 	final int WIDTH = 500;
@@ -55,9 +55,9 @@ public class AI_Evolution00 extends Canvas
 	public static void main(String[] args)
 	{
 		//allows for this file to be run to start the simulation
-		new AI_Evolution00();
+		new AI_Evolution();
 		
-		//this is just to help me figure out how one of AIEv00's constructors work
+		//this is just to help me figure out how one of AIEv's constructors work
 //		Double a = Math.random();
 //		int screenWidth = 500;
 //		System.out.println(Math.round(a * screenWidth * 2 - screenWidth));
@@ -67,9 +67,9 @@ public class AI_Evolution00 extends Canvas
 	/**
 	 * This constructor calls {@link #init(String, int, int)} to setup the JFrame object, {@link #setBufferStrategy()} to  
 	 * setup this canvas' BufferStrategy and instantiate {@link #draw} and {@link #frame} then starts the simulation. It 
-	 * also sets the default AI color for AIEv00 objects.
+	 * also sets the default AI color for AIEv objects.
 	 */
-	public AI_Evolution00()
+	public AI_Evolution()
 	{
 		//sets up the JFrame frame
 		init(TITLE, WIDTH, HEIGHT);
@@ -77,7 +77,7 @@ public class AI_Evolution00 extends Canvas
 		setBufferStrategy();
 		
 		//sets the default color for any AI that isn't the best
-		AIEv00.default_color = DEFAULT_AI_COLOR;
+		AIEv.default_color = DEFAULT_AI_COLOR;
 		
 		//starts the simulation
 		run(SILENT_SIMULATE);
@@ -112,7 +112,7 @@ public class AI_Evolution00 extends Canvas
 	public void run(boolean silent)
 	{
 		//the current best AI. "best" meaning the closest to making a straight line down the middle
-		AIEv00 bestAI = new AIEv00(STEPS, WIDTH);
+		AIEv bestAI = new AIEv(STEPS, WIDTH);
 		//keep count of what generation the program is on, starting from zero.
 		int count = 0;
 		//set the frame's title to the current generation
@@ -134,16 +134,16 @@ public class AI_Evolution00 extends Canvas
 		frame.setTitle(String.format("Finished at Generation %d!", count));
 	}
 	
-	public AIEv00 simulate(AIEv00 bestAI, int count, int tolerance, boolean silent)
+	public AIEv simulate(AIEv bestAI, int count, int tolerance, boolean silent)
 	{
 		if(count == 0)
 		{
 			return bestAI;
 		}
-		ArrayList<AIEv00> arr = new ArrayList<AIEv00>();
+		ArrayList<AIEv> arr = new ArrayList<AIEv>();
 		for(int a = 1; a < AI_COUNT; a++)
 		{
-			arr.add(new AIEv00(bestAI.steps, WIDTH, tolerance));
+			arr.add(new AIEv(bestAI.steps, WIDTH, tolerance));
 		}
 		arr.add(bestAI);
 		
@@ -178,13 +178,13 @@ public class AI_Evolution00 extends Canvas
 		return simulate(arr.get(indexOfBest), count - 1, tolerance, silent);
 	}
 	
-	public void render(int step, ArrayList<AIEv00> arr)
+	public void render(int step, ArrayList<AIEv> arr)
 	{
 		//draw the background
 		draw.setColor(BACKGROUND_COLOR);
 		draw.fillRect(0, 0, WIDTH, HEIGHT);
 		
-		for(AIEv00 ai: arr)
+		for(AIEv ai: arr)
 		{
 			//set color for the AI
 			draw.setColor(ai.color);
@@ -197,7 +197,7 @@ public class AI_Evolution00 extends Canvas
 		sleep(WAIT_BETWEEN_STEPS);
 	}
 	
-	public boolean isPerfect(AIEv00 ai)
+	public boolean isPerfect(AIEv ai)
 	{
 		int center = WIDTH / 2;
 		for(int x: ai.steps)
@@ -208,7 +208,7 @@ public class AI_Evolution00 extends Canvas
 		return true;
 	}
 	
-	public void plotBest(AIEv00 bestAI) throws NullPointerException
+	public void plotBest(AIEv bestAI) throws NullPointerException
 	{
 		
 		//draw the background
@@ -253,14 +253,14 @@ public class AI_Evolution00 extends Canvas
 	}
 }
 
-class AIEv00
+class AIEv
 {
 	static Color default_color = Color.black;
 	Color color = default_color;
 	double score = 0;
 	double rateOfMutation = 1.0/95.0;
 	ArrayList<Integer> steps = new ArrayList<Integer>();
-	public AIEv00(ArrayList<Integer> steps, int screenWidth, int tolerance)
+	public AIEv(ArrayList<Integer> steps, int screenWidth, int tolerance)
 	{
 		for(int num: steps)
 		{
@@ -283,7 +283,7 @@ class AIEv00
 			}
 		}
 	}
-	public AIEv00(int stepsAllowed, int screenWidth)
+	public AIEv(int stepsAllowed, int screenWidth)
 	{
 		steps = new ArrayList<Integer>();
 		int firstStep = (int)Math.round(Math.random() * screenWidth * 2 - screenWidth);
