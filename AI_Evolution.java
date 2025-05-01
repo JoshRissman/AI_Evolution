@@ -20,9 +20,9 @@ public class AI_Evolution extends Canvas
 	/** The usable height of {@link #frame} (determined when {@link #init(String, int, int)} is run).*/
 	int USABLE_HEIGHT = HEIGHT;
 	/** How far the AI travel per step in pixels. */
-	final int STEPSIZE = 5;
+	final int STEP_SIZE = 5;
 	/** The number of steps the AI will have to take on their descent. */
-	int STEPS = HEIGHT / STEPSIZE - 4;
+	int STEPS = USABLE_HEIGHT / STEP_SIZE;
 	/** The number of AI per generation. */
 	final int AI_COUNT = 1000;
 	/** The number of generations trained before showing the results */
@@ -32,9 +32,11 @@ public class AI_Evolution extends Canvas
 	/** The wait between each generation being drawn in milliseconds. */
 	final int WAIT_BETWEEN_GENERATIONS = 500;
 	/** The wait between each step being drawn in milliseconds. Only effects the program when {@link #SILENT_SIMULATE} is 
-	 * true.
+	 * false.
 	 */
 	final int WAIT_BETWEEN_STEPS = 10;
+	/** Keeps track of the number of generations that have been simulated. */
+	int COUNT = 0;
 	/** The title of {@link #frame}. */
 	final String TITLE = "Evolve!";
 	/** The color for each step of the best AI. */
@@ -61,11 +63,6 @@ public class AI_Evolution extends Canvas
 		//allows for this file to be run to start the simulation
 		new AI_Evolution();
 		
-		//this is just to help me figure out how one of AIEv's constructors work
-//		Double a = Math.random();
-//		int screenWidth = 500;
-//		System.out.println(Math.round(a * screenWidth * 2 - screenWidth));
-//		System.out.println(Math.round(a * screenWidth));
 	}
 	
 	/**
@@ -116,7 +113,7 @@ public class AI_Evolution extends Canvas
 		Insets insets = frame.getInsets();
 		USABLE_HEIGHT = HEIGHT - insets.top - insets.bottom;
 		USABLE_WIDTH = WIDTH - insets.left - insets.left;
-		STEPS = USABLE_HEIGHT / STEPSIZE;
+		STEPS = USABLE_HEIGHT / STEP_SIZE;
 	}
 
 	/**
@@ -127,26 +124,33 @@ public class AI_Evolution extends Canvas
 	public void run(boolean silent)
 	{
 		//the current best AI. "best" meaning the closest to making a straight line down the middle
-		AIEv bestAI = new AIEv(STEPS, WIDTH);
-		//keep count of what generation the program is on, starting from zero.
-		int count = 0;
+		AIEv bestAI = new AIEv(STEPS, USABLE_WIDTH);
+		//reset COUNT for a new simulation
+		COUNT = 0;
 		//set the frame's title to the current generation
-		frame.setTitle(String.format("Generation %d", count));
+		frame.setTitle(String.format("Generation %d", COUNT));
 		//plot the current best AI, which is the ancestor for all future AI
 		plotBest(bestAI);
+		COUNT++;
 		
 		//use a while loop instead of a do-while just in case the current best AI is already perfect
 		while(!isPerfect(bestAI))
 		{
+			// NOTE still an issue where the generation numbers are off
+			frame.setTitle(String.format("Generation %d", COUNT));
 			bestAI = simulate(bestAI, VIEW_RATE, WIDTH, silent);
-			count += VIEW_RATE;
-			frame.setTitle(String.format("Generation %d", count));
+			COUNT += VIEW_RATE;
+			if(!silent)
+			{
+				frame.setTitle("Current Best AI");
+				
+			}
 			plotBest(bestAI);
 		}
 		//the best will not have been shown without 
 		plotBest(bestAI);
 		//show the user that the AI have found the center, and how many generations it took for them to do so.
-		frame.setTitle(String.format("Finished at Generation %d!", count));
+		frame.setTitle(String.format("Finished at Generation %d!", COUNT));
 	}
 	
 	public AIEv simulate(AIEv bestAI, int count, int tolerance, boolean silent)
@@ -164,6 +168,7 @@ public class AI_Evolution extends Canvas
 		
 		if(!silent)
 		{
+			frame.setTitle(String.format("Generation %d", COUNT + VIEW_RATE - count));
 			int step = 0;
 			while(step < STEPS)
 			{
@@ -171,7 +176,6 @@ public class AI_Evolution extends Canvas
 				step++;
 			}
 			sleep(WAIT_BETWEEN_GENERATIONS);
-			frame.setTitle(String.format("Generation %d", VIEW_RATE - count + 1));
 		}
 		
 		int indexOfBest = 0;
@@ -207,7 +211,7 @@ public class AI_Evolution extends Canvas
 			//the x coordinate is determined by the AI, every x coordinate has a unique y coordinate in ascending order 
 			//	(note that here, an ascending y value means going DOWN the screen), the final two parameters are width
 			//	 and height, which are the same since every step is a square
-			draw.fillRect(ai.get(step), step * STEPSIZE, STEPSIZE, STEPSIZE);
+			draw.fillRect(ai.get(step), step * STEP_SIZE, STEP_SIZE, STEP_SIZE);
 		}
 		this.getBufferStrategy().show();
 		sleep(WAIT_BETWEEN_STEPS);
@@ -240,7 +244,7 @@ public class AI_Evolution extends Canvas
 			//the x coordinate is determined by the AI, every x coordinate has a unique y coordinate in ascending order 
 			//	(note that here, an ascending y value means going DOWN the screen), the final two parameters are width
 			//	 and height, which are the same since every step is a square
-			draw.fillRect(curstep, step * STEPSIZE, STEPSIZE, STEPSIZE);
+			draw.fillRect(curstep, step * STEP_SIZE, STEP_SIZE, STEP_SIZE);
 			//increase the y value
 			step++;
 		}
@@ -302,20 +306,10 @@ class AIEv
 	public AIEv(int stepsAllowed, int screenWidth)
 	{
 		steps = new ArrayList<Integer>();
-		int firstStep = (int)Math.round(Math.random() * screenWidth * 2 - screenWidth);
 		for(int a = 0; a < stepsAllowed; a++)
 		{
-			int temp = (firstStep + (int)Math.round(Math.random() * screenWidth * 2 - screenWidth));
-			if(temp > screenWidth)
-			{
-				temp = screenWidth - 10;//idk just keeps it from going off screen
-			}
-			else if(temp < 0)
-			{
-				temp = 0;
-			}
-			this.steps.add(temp);
-			firstStep = temp;
+			int step = (int)Math.round(Math.random() * screenWidth);
+			this.steps.add(step);
 		}
 	}
 	public int get(int step)
