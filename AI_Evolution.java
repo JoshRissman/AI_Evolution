@@ -2,22 +2,27 @@ import java.awt.Canvas;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
+import java.awt.Insets;
 import java.util.ArrayList;
 
 import javax.swing.JFrame;
 
 public class AI_Evolution extends Canvas
 {
-	private static final long serialVersionUID = 2L;
+	private static final long serialVersionUID = 3L;
 	
 	/** The width of {@link #frame}. */
 	final int WIDTH = 500;
+	/** The usable width of {@link #frame} (determined when {@link #init(String, int, int)} is run).*/
+	int USABLE_WIDTH = WIDTH;
 	/** The height of {@link #frame}. */
 	final int HEIGHT = 500;
+	/** The usable height of {@link #frame} (determined when {@link #init(String, int, int)} is run).*/
+	int USABLE_HEIGHT = HEIGHT;
 	/** How far the AI travel per step in pixels. */
 	final int STEPSIZE = 5;
 	/** The number of steps the AI will have to take on their descent. */
-	final int STEPS = HEIGHT / STEPSIZE - 4;
+	int STEPS = HEIGHT / STEPSIZE - 4;
 	/** The number of AI per generation. */
 	final int AI_COUNT = 1000;
 	/** The number of generations trained before showing the results */
@@ -106,8 +111,19 @@ public class AI_Evolution extends Canvas
 		//add this canvas to the frame and make it visible
 		frame.add(this);
 		frame.setVisible(true);	
+		
+		//determine the usable width and height in frame which makes it so that the steps are all visible
+		Insets insets = frame.getInsets();
+		USABLE_HEIGHT = HEIGHT - insets.top - insets.bottom;
+		USABLE_WIDTH = WIDTH - insets.left - insets.left;
+		STEPS = USABLE_HEIGHT / STEPSIZE;
 	}
-	
+
+	/**
+	 * This method starts a simulation and runs until the simulation has produced a perfect AI (the AI that follows the
+	 * given criteria the best).
+	 * @param silent A boolean that determines whether or not this simulation will show the 
+	 */
 	public void run(boolean silent)
 	{
 		//the current best AI. "best" meaning the closest to making a straight line down the middle
@@ -155,6 +171,7 @@ public class AI_Evolution extends Canvas
 				step++;
 			}
 			sleep(WAIT_BETWEEN_GENERATIONS);
+			frame.setTitle(String.format("Generation %d", VIEW_RATE - count + 1));
 		}
 		
 		int indexOfBest = 0;
@@ -212,7 +229,7 @@ public class AI_Evolution extends Canvas
 		
 		//draw the background
 		draw.setColor(BACKGROUND_COLOR);
-		draw.fillRect(0, 0, HEIGHT, WIDTH);
+		draw.fillRect(0, 0, WIDTH, HEIGHT);
 		
 		//set color for the best AI
 		draw.setColor(BEST_AI_COLOR);
