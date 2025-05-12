@@ -4,52 +4,65 @@ import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Insets;
 import java.util.ArrayList;
-
+import java.util.InputMismatchException;
 import javax.swing.JFrame;
 
 public class AI_Evolution extends Canvas
 {
-	private static final long serialVersionUID = 3L;
+	private static final long serialVersionUID = 4L;
 	
 	/** The width of {@link #frame}. */
-	final int WIDTH = 500;
+	int WIDTH = 500;
 	/** The usable width of {@link #frame} (determined when {@link #init(String, int, int)} is run).*/
 	int USABLE_WIDTH = WIDTH;
 	/** The height of {@link #frame}. */
-	final int HEIGHT = 500;
+	int HEIGHT = 500;
 	/** The usable height of {@link #frame} (determined when {@link #init(String, int, int)} is run).*/
 	int USABLE_HEIGHT = HEIGHT;
 	/** How far the AI travel per step in pixels. */
-	final int STEP_SIZE = 5;
+	int STEP_SIZE = 5;
 	/** The number of steps the AI will have to take on their descent. */
 	int STEPS = USABLE_HEIGHT / STEP_SIZE;
 	/** The number of AI per generation. */
-	final int AI_COUNT = 1000;
-	/** The number of generations trained before showing the results */
-	final int VIEW_RATE = 100;
+	int AI_COUNT = 1000;
+	/** The size of the AI (represented as squares). **/
+	int AI_SIZE = 5;
+	/** The number of generations trained before showing the best AI. */
+	int VIEW_RATE = 100;
 	/** The wait after the BufferStrategy is created in milliseconds. Prevents flickering. */
-	final int WAIT_AFTER_BUFFERSTRATEGY_CREATION = 50;
+	int WAIT_AFTER_BUFFERSTRATEGY_CREATION = 50;
 	/** The wait between each generation being drawn in milliseconds. */
-	final int WAIT_BETWEEN_GENERATIONS = 500;
-	/** The wait between each step being drawn in milliseconds. Only effects the program when {@link #SILENT_SIMULATE} is 
+	int WAIT_BETWEEN_GENERATIONS = 500;
+	/** 
+	 * This is the wait after the best AI is drawn in milliseconds. Only effects the program when {@link 
+	 * #SILENT_SIMULATE} is false. 
+	 */
+	int WAIT_AFTER_BEST = 2000;
+	/** 
+	 * The wait between each step being drawn in milliseconds. Only effects the program when {@link #SILENT_SIMULATE} is 
 	 * false.
 	 */
-	final int WAIT_BETWEEN_STEPS = 10;
+	int WAIT_BETWEEN_STEPS = 10;
+	/** The horizontal distance the AI can travel each step (reassigned to be {@link #USABLE_WIDTH} when {@link #init
+	 * (String, int, int)} is run). */
+	int TOLERANCE = USABLE_WIDTH;
 	/** Keeps track of the number of generations that have been simulated. */
-	int COUNT = 0;
+	int GEN_COUNTER = 0;
+	/** The rate at which mutation can occur. */
+	double MUTATION_RATE = 1.0 / 95.0;
 	/** The title of {@link #frame}. */
-	final String TITLE = "Evolve!";
+	String TITLE = "Evolve!";
 	/** The color for each step of the best AI. */
-	final Color BEST_AI_COLOR = Color.red;
+	Color BEST_AI_COLOR = Color.red;
 	/** The color for each step of any AI that isn't the best. */
-	final Color DEFAULT_AI_COLOR = Color.black;
-	/** The color the background is drawn as */
-	final Color BACKGROUND_COLOR = Color.white;
+	static Color DEFAULT_AI_COLOR = Color.black;
+	/** The color the background is drawn as. */
+	Color BACKGROUND_COLOR = Color.white;
 	/** Determines whether or not only the best AI will be shown. Setting this value to true will hide other AI, while 
 	 * false will show them. Note that it will render all {@link #VIEW_RATE} number of simulations, then show the best AI
 	 * found, as it would when set to true.
 	 */
-	final boolean SILENT_SIMULATE = true;
+	boolean SILENT_SIMULATE = true;
 	/**
 	 * The frame in which the simulation is shown. Will halt the program when closed. Will not close automatically when 
 	 * the simulation is done.
@@ -61,8 +74,17 @@ public class AI_Evolution extends Canvas
 	public static void main(String[] args)
 	{
 		//allows for this file to be run to start the simulation
-		new AI_Evolution();
 		
+		//the default, equivalent to new AI_Evolution(500, 500, 5, 1000, 5, 100, 1000, 50, 500, 
+		//	1.0 / 95.0, Color.black, Color.white);
+//		new AI_Evolution(); 
+		
+		//a user specified silent run, equivalent to new AI_Evolution(); 
+		new AI_Evolution(33 /*was 500*/, 500, 5, 1000, 5, 100, 500, 50, 500, 1.0 / 95.0, Color.black, Color.white);
+		
+		//a user specified non-silent run, equivalent to new AI_Evolution(); where SILENT_SIMULATE = false; 
+//		new AI_Evolution(500, 500, 5, 1000, 5, 100, 500, 50, 500, 2000, 10, 1.0 / 95.0, Color.red, Color.white, 
+//				Color.black);
 	}
 	
 	/**
@@ -75,10 +97,349 @@ public class AI_Evolution extends Canvas
 		//sets up the JFrame frame
 		init(TITLE, WIDTH, HEIGHT);
 		
+		//redefines TOLERANCE based on the potentially updated USABLE_WIDTH in init()
+		TOLERANCE = USABLE_WIDTH;
+		
 		setBufferStrategy();
 		
-		//sets the default color for any AI that isn't the best
-		AIEv.default_color = DEFAULT_AI_COLOR;
+		//starts the simulation
+		run(SILENT_SIMULATE);
+	}
+	
+	
+	/**
+	 * A constructor for the user to customize their own set of simulations that only show the best AI (see 
+	 * {@link #Portfolio.AI_Evolution.AI_Evolution(int, int, int, int, int, int, int, int, int, int, int, double, Color, 
+	 * Color, Color)} for runs that show all AI simulations. Warning: since the user provides their own 
+	 * {@code width} and {@code height}, the element {@link #frame}{@code .title} may not be visible.
+	 * @param width The width of {@link #frame}.
+	 * @param height The height of {@link #frame}.
+	 * @param step_size How far the AI travel per step in pixels.
+	 * @param ai_count The number of AI per generation.
+	 * @param ai_size The size of the AI (represented as squares).
+	 * @param view_rate The number of generations trained before showing the best AI.
+	 * @param tolerance The horizontal distance the AI can travel each step.
+	 * @param wait_after_bufferstrategy_creation
+	 * @param wait_between_generations The wait after the BufferStrategy is created in milliseconds. Meant to prevent 
+	 * flickering.
+	 * @param mutation_rate The rate at which mutation can occur.
+	 * @param ai_color The color of the best AI (which is the only AI shown using this constructor).
+	 * @param background_color The color the background is drawn as.
+	 * @throws InputMismatchException Thrown in three cases. 
+	 * <p>
+	 * Case 1: {@code width}, {@code height},  {@code step_size}, {@code ai_count}, 
+	 * {@code ai_size}, {@code view_rate},  {@code tolerance}, or {@code mutation_rate} are less than or equal to zero.
+	 * </p>
+	 * <p>
+	 * Case 2: {@code wait_after_bufferstrategy_creation} or {@code wait_between_generations} are less than zero.
+	 * </p>
+	 * <p>
+	 * Case 3: From the {@code width} and {@code height} provided, there is not enough usable space to run the simulation.
+	 * </p>
+	 */
+	public AI_Evolution(int width, int height, int step_size, int ai_count, int ai_size, int view_rate, 
+			int tolerance, int wait_after_bufferstrategy_creation, int wait_between_generations, double mutation_rate,
+			Color ai_color, Color background_color) throws InputMismatchException
+	{
+		//global variable initializations
+		SILENT_SIMULATE = true;
+		WIDTH = width;
+		HEIGHT = height;
+		STEP_SIZE = step_size;
+		AI_COUNT = ai_count;
+		AI_SIZE = ai_size;
+		VIEW_RATE = view_rate;
+		TOLERANCE = tolerance;
+		WAIT_AFTER_BUFFERSTRATEGY_CREATION = wait_after_bufferstrategy_creation;
+		WAIT_BETWEEN_GENERATIONS = wait_between_generations;
+		MUTATION_RATE = mutation_rate;
+		BEST_AI_COLOR = ai_color;
+		BACKGROUND_COLOR = background_color;
+		
+		//case 1 exceptions:
+		if(WIDTH <= 0)
+		{
+			throw new InputMismatchException("Width must be greater than 0.");
+		}
+		if(HEIGHT <= 0)
+		{
+			throw new InputMismatchException("Height must be greater than 0.");
+		}
+		if(STEP_SIZE <= 0)
+		{
+			throw new InputMismatchException("The step size must be greater than 0.");
+		}
+		if(AI_COUNT <= 0)
+		{
+			throw new InputMismatchException("The AI count (number of AI) must be greater than 0.");
+		}
+		if(AI_SIZE <= 0)
+		{
+			throw new InputMismatchException("The AI size must be greater than 0.");
+		}
+		if(VIEW_RATE <= 0)
+		{
+			throw new InputMismatchException("The view rate must be greater than 0.");
+		}
+		if(TOLERANCE <= 0)
+		{
+			throw new InputMismatchException("The tolerance must be greater than 0.");
+		}
+		if(MUTATION_RATE <= 0)
+		{
+			throw new InputMismatchException("The mutation rate must be greater than 0.");
+		}
+		
+		//case 2 exceptions:
+		if(WAIT_AFTER_BUFFERSTRATEGY_CREATION < 0)
+		{
+			throw new InputMismatchException("The wait after BufferStrategy creation rate must not be less than 0.");
+		}
+		if(WAIT_BETWEEN_GENERATIONS < 0)
+		{
+			throw new InputMismatchException("The wait between generations must not be less than 0.");
+		}
+		
+		//color overlap warning
+		if(BACKGROUND_COLOR.equals(BEST_AI_COLOR))
+		{
+			System.out.println("WARNING: BACKGROUND COLOR AND BEST AI COLOR ARE THE SAME. THEREFORE THE BEST"
+					+ " AI MAY NOT BE VISIBLE.");
+		}
+		
+		//AI size and step size overlap warning and correction
+		if(STEP_SIZE < AI_SIZE)
+		{
+			System.out.printf("The step size of the AI is smaller than the size of the AI itself, and will thus overlap."
+					+ " Your selected AI size is %d and your selected AI step size is %d. Therefore, the step size"
+					+ " will be updated to %d.\n", step_size, ai_size, ai_size);
+			STEP_SIZE = AI_SIZE;
+			
+		}
+		
+		//sets up the JFrame frame (also determines USABLE_WIDTH and USABLE_HEIGHT)
+		init(TITLE, WIDTH, HEIGHT);
+		
+		
+		//excessive tolerance warning and correction
+		if(USABLE_WIDTH < TOLERANCE)
+		{
+			System.out.printf("The usable width of the canvas area is smaller than the tolerance of the AI. Therefore,"
+					+ " the tolerance will be updated to the usable width: %d.\n", USABLE_WIDTH);
+			TOLERANCE = USABLE_WIDTH;
+			
+		}
+		
+		//case 3 exceptions:
+		try
+		{
+			//USABLE_WIDTH already contains the - AI_SIZE check we would otherwise do
+			if(USABLE_WIDTH < 0)
+			{
+				throw new InputMismatchException(String.format("There is not enough usable width for the given AI size. Please"
+						+ " check to make sure that\n"
+						+ "USABLE_WIDTH - AI_SIZE < 0\n"
+						+ "%d - %d = %d", USABLE_WIDTH + AI_SIZE, AI_SIZE, USABLE_WIDTH));
+			}
+			
+			if(USABLE_HEIGHT - AI_SIZE < 0)
+			{
+				throw new InputMismatchException(String.format("There is not enough usable height for the given AI size. "
+						+ "Please check to make sure that\n"
+						+ "USABLE_HEIGHT - AI_SIZE < 0 \n"
+						+ "%d - %d = %d", USABLE_HEIGHT, AI_SIZE, USABLE_HEIGHT - AI_SIZE));
+			}
+		}
+		catch(InputMismatchException ex) 
+		{
+			frame.setTitle("Error! Check console!");
+			throw ex;
+		}
+		
+		
+		setBufferStrategy();
+		
+		//starts the simulation
+		run(SILENT_SIMULATE);
+	}
+	
+	/**
+	 * A constructor for the user to customize their own set of simulations that show all AI simulations (see 
+	 * {@link #Portfolio.AI_Evolution.AI_Evolution(int, int, int, int, int, int, int, int, int, double, Color, Color)} 
+	 * for runs that show only the best AI simulations. Warning: since the user provides their own 
+	 * {@code width} and {@code height}, the element {@link #frame}{@code .title} may not be visible.
+	 * @param width The width of {@link #frame}.
+	 * @param height The height of {@link #frame}.
+	 * @param step_size How far the AI travel per step in pixels.
+	 * @param ai_count The number of AI per generation.
+	 * @param ai_size The size of the AI (represented as squares).
+	 * @param view_rate The number of generations trained before showing the best AI.
+	 * @param tolerance The horizontal distance the AI can travel each step.
+	 * @param wait_after_bufferstrategy_creation
+	 * @param wait_between_generations The wait after the BufferStrategy is created in milliseconds. Meant to prevent 
+	 * flickering.
+	 * @param wait_after_best This is the wait after the best AI is drawn in milliseconds.
+	 * @param wait_between_steps The wait between each step being drawn in milliseconds.
+	 * @param mutation_rate The rate at which mutation can occur.
+	 * @param best_ai_color The color of the best AI (which is the only AI shown using this constructor).
+	 * @param background_color The color the background is drawn as.
+	 * @param default_ai_color The color for each step of any AI that isn't the best.
+	 * @throws InputMismatchException Thrown in three cases. 
+	 * <p>
+	 * Case 1: {@code width}, {@code height},  {@code step_size}, {@code ai_count}, 
+	 * {@code ai_size}, {@code view_rate},  {@code tolerance}, or {@code mutation_rate} are less than or equal to zero.
+	 * </p>
+	 * <p>
+	 * Case 2: {@code wait_after_bufferstrategy_creation}, {@code wait_between_generations}, {@code wait_after_best}, 
+	 * or {@code wait_between_steps} are less than zero.
+	 * </p>
+	 * <p>
+	 * Case 3: From the {@code width} and {@code height} provided, there is not enough usable space to run the simulation.
+	 * </p>
+	 */
+	public AI_Evolution(int width, int height, int step_size, int ai_count, int ai_size, int view_rate, 
+			int tolerance, int wait_after_bufferstrategy_creation, int wait_between_generations, int wait_after_best,
+			int wait_between_steps, double mutation_rate, Color best_ai_color, Color background_color, 
+			Color default_ai_color) throws InputMismatchException
+	{
+		//global variable initializations
+		SILENT_SIMULATE = false;
+		WIDTH = width;
+		HEIGHT = height;
+		STEP_SIZE = step_size;
+		AI_COUNT = ai_count;
+		AI_SIZE = ai_size;
+		VIEW_RATE = view_rate;
+		TOLERANCE = tolerance;
+		WAIT_AFTER_BUFFERSTRATEGY_CREATION = wait_after_bufferstrategy_creation;
+		WAIT_BETWEEN_GENERATIONS = wait_between_generations;
+		WAIT_AFTER_BEST = wait_after_best;
+		WAIT_BETWEEN_STEPS = wait_between_steps;
+		MUTATION_RATE = mutation_rate;
+		BEST_AI_COLOR = best_ai_color;
+		BACKGROUND_COLOR = background_color;
+		DEFAULT_AI_COLOR = default_ai_color;
+		
+		//case 1 exceptions:
+		if(WIDTH <= 0)
+		{
+			throw new InputMismatchException("Width must be greater than 0.");
+		}
+		if(HEIGHT <= 0)
+		{
+			throw new InputMismatchException("Height must be greater than 0.");
+		}
+		if(STEP_SIZE <= 0)
+		{
+			throw new InputMismatchException("The step size must be greater than 0.");
+		}
+		if(AI_COUNT <= 0)
+		{
+			throw new InputMismatchException("The AI count (number of AI) must be greater than 0.");
+		}
+		if(AI_SIZE <= 0)
+		{
+			throw new InputMismatchException("The AI size must be greater than 0.");
+		}
+		if(VIEW_RATE <= 0)
+		{
+			throw new InputMismatchException("The view rate must be greater than 0.");
+		}
+		if(TOLERANCE <= 0)
+		{
+			throw new InputMismatchException("The tolerance must be greater than 0.");
+		}
+		if(MUTATION_RATE <= 0)
+		{
+			throw new InputMismatchException("The mutation rate must be greater than 0.");
+		}
+		
+		//case 2 exceptions:
+		if(WAIT_AFTER_BUFFERSTRATEGY_CREATION < 0)
+		{
+			throw new InputMismatchException("The wait after BufferStrategy creation rate must not be less than 0.");
+		}
+		if(WAIT_BETWEEN_GENERATIONS < 0)
+		{
+			throw new InputMismatchException("The wait between generations must not be less than 0.");
+		}
+		if(WAIT_AFTER_BEST < 0)
+		{
+			throw new InputMismatchException("The wait after the best AI is shown must not be less than 0.");
+		}
+		if(WAIT_BETWEEN_STEPS < 0)
+		{
+			throw new InputMismatchException("The wait between the steps the AI takes must not be less than 0.");
+		}
+		
+		//color overlap warning
+		if(BACKGROUND_COLOR.equals(BEST_AI_COLOR))
+		{
+			System.out.println("WARNING: BACKGROUND COLOR AND BEST AI COLOR ARE THE SAME. THEREFORE THE BEST"
+					+ " AI MAY NOT BE VISIBLE.");
+		}
+		if(BACKGROUND_COLOR.equals(DEFAULT_AI_COLOR))
+		{
+			System.out.println("WARNING: BACKGROUND COLOR AND DEFAULT AI COLOR ARE THE SAME. THEREFORE THE DEFAULT"
+					+ " AI MAY NOT BE VISIBLE.");
+		}
+		if(BEST_AI_COLOR.equals(DEFAULT_AI_COLOR))
+		{
+			System.out.println("WARNING: BEST AI COLOR AND DEFAULT AI COLOR ARE THE SAME. THEREFORE THE BEST"
+					+ " AI AND DEFAULT AI MAY NOT BE DISTINGUISHABLE.");
+		}
+		
+		//AI size and step size overlap warning and correction
+		if(STEP_SIZE < AI_SIZE)
+		{
+			System.out.printf("The step size of the AI is smaller than the size of the AI itself, and will thus overlap."
+					+ " Your selected AI size is %d and your selected AI step size is %d. Therefore, the step size"
+					+ " will be updated to %d.\n", step_size, ai_size, ai_size);
+			STEP_SIZE = AI_SIZE;
+			
+		}
+		
+		//sets up the JFrame frame (also determines USABLE_WIDTH and USABLE_HEIGHT)
+		init(TITLE, WIDTH, HEIGHT);
+		
+		
+		//excessive tolerance warning and correction
+		if(USABLE_WIDTH < TOLERANCE)
+		{
+			System.out.printf("The usable width of the canvas area is smaller than the tolerance of the AI. Therefore,"
+					+ " the tolerance will be updated to the usable width: %d.\n", USABLE_WIDTH);
+			TOLERANCE = USABLE_WIDTH;
+			
+		}
+		
+		//case 3 exceptions:
+		try
+		{
+			//USABLE_WIDTH already contains the - AI_SIZE check we would otherwise do
+			if(USABLE_WIDTH < 0)
+			{
+				throw new InputMismatchException(String.format("There is not enough usable width for the given AI size. Please"
+						+ " check to make sure that\n"
+						+ "USABLE_WIDTH - AI_SIZE < 0\n"
+						+ "%d - %d = %d", USABLE_WIDTH + AI_SIZE, AI_SIZE, USABLE_WIDTH));
+			}
+			
+			if(USABLE_HEIGHT - AI_SIZE < 0)
+			{
+				throw new InputMismatchException(String.format("There is not enough usable height for the given AI size. "
+						+ "Please check to make sure that\n"
+						+ "USABLE_HEIGHT - AI_SIZE < 0 \n"
+						+ "%d - %d = %d", USABLE_HEIGHT, AI_SIZE, USABLE_HEIGHT - AI_SIZE));
+			}
+		}
+		catch(InputMismatchException ex) 
+		{
+			frame.setTitle("Error! Check console!");
+			throw ex;
+		}
+		
+		
+		setBufferStrategy();
 		
 		//starts the simulation
 		run(SILENT_SIMULATE);
@@ -97,6 +458,7 @@ public class AI_Evolution extends Canvas
 		frame.setPreferredSize(new Dimension(width, height));
 		frame.setMaximumSize(new Dimension(width, height));
 		frame.setMinimumSize(new Dimension(width, height));
+		frame.setSize(new Dimension(width, height));
 		
 		//set the default close operation, and turn off resizing
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -109,10 +471,27 @@ public class AI_Evolution extends Canvas
 		frame.add(this);
 		frame.setVisible(true);	
 		
+		if(frame.getWidth() != WIDTH)
+		{
+			int frameWidth = frame.getWidth();
+			System.out.printf("The width given (%d) and the actual width (%d) do not match! The program will accomodate"
+					+ " this, but the user should know that in your case %d seems to be the minimum width.\n",
+					WIDTH, frameWidth, frameWidth);
+			WIDTH = frameWidth;
+		}
+		if(frame.getHeight() != HEIGHT)
+		{
+			int frameHeight = frame.getHeight();
+			System.out.printf("The height given (%d) and the actual height (%d) do not match! The program will accomodate"
+					+ " this, but the user should know that in your case %d seems to be the minimum height.\n",
+					WIDTH, frameHeight, frameHeight);
+			WIDTH = frameHeight;
+		}
+		
 		//determine the usable width and height in frame which makes it so that the steps are all visible
 		Insets insets = frame.getInsets();
 		USABLE_HEIGHT = HEIGHT - insets.top - insets.bottom;
-		USABLE_WIDTH = WIDTH - insets.left - insets.left;
+		USABLE_WIDTH = WIDTH - insets.left - insets.left - AI_SIZE;
 		STEPS = USABLE_HEIGHT / STEP_SIZE;
 	}
 
@@ -126,31 +505,28 @@ public class AI_Evolution extends Canvas
 		//the current best AI. "best" meaning the closest to making a straight line down the middle
 		AIEv bestAI = new AIEv(STEPS, USABLE_WIDTH);
 		//reset COUNT for a new simulation
-		COUNT = 0;
+		GEN_COUNTER = 0;
 		//set the frame's title to the current generation
-		frame.setTitle(String.format("Generation %d", COUNT));
+		frame.setTitle(String.format("Generation %d", GEN_COUNTER));
 		//plot the current best AI, which is the ancestor for all future AI
 		plotBest(bestAI);
-		COUNT++;
 		
 		//use a while loop instead of a do-while just in case the current best AI is already perfect
 		while(!isPerfect(bestAI))
 		{
-			// NOTE still an issue where the generation numbers are off
-			frame.setTitle(String.format("Generation %d", COUNT));
-			bestAI = simulate(bestAI, VIEW_RATE, WIDTH, silent);
-			COUNT += VIEW_RATE;
+			bestAI = simulate(bestAI, VIEW_RATE, TOLERANCE, silent);
+			frame.setTitle(String.format("Generation %d", GEN_COUNTER));
 			if(!silent)
 			{
 				frame.setTitle("Current Best AI");
-				
 			}
 			plotBest(bestAI);
 		}
+		
 		//the best will not have been shown without 
 		plotBest(bestAI);
 		//show the user that the AI have found the center, and how many generations it took for them to do so.
-		frame.setTitle(String.format("Finished at Generation %d!", COUNT));
+		frame.setTitle(String.format("Finished at Generation %d!", GEN_COUNTER));
 	}
 	
 	public AIEv simulate(AIEv bestAI, int count, int tolerance, boolean silent)
@@ -159,16 +535,19 @@ public class AI_Evolution extends Canvas
 		{
 			return bestAI;
 		}
+		
+		GEN_COUNTER++;
+		
 		ArrayList<AIEv> arr = new ArrayList<AIEv>();
 		for(int a = 1; a < AI_COUNT; a++)
 		{
-			arr.add(new AIEv(bestAI.steps, WIDTH, tolerance));
+			arr.add(new AIEv(bestAI.steps, USABLE_WIDTH, tolerance, MUTATION_RATE));
 		}
 		arr.add(bestAI);
 		
 		if(!silent)
 		{
-			frame.setTitle(String.format("Generation %d", COUNT + VIEW_RATE - count));
+			frame.setTitle(String.format("Generation %d", GEN_COUNTER));
 			int step = 0;
 			while(step < STEPS)
 			{
@@ -178,23 +557,33 @@ public class AI_Evolution extends Canvas
 			sleep(WAIT_BETWEEN_GENERATIONS);
 		}
 		
+		//arbitrarily say 0th AI is the worst, but will immediately check that assumption
 		int indexOfBest = 0;
-		double scoreOfBest = Double.MAX_VALUE;
+		double scoreOfBest = Double.MAX_VALUE; //lowest possible score (explained below)
+		
+		//determines the best AI
 		for(int a = 0; a < arr.size(); a++)
 		{
+			//fitness function. Lower scores are better, and is determined by closeness to the center on average
 			double score = 0;
 			for(int x: arr.get(a).steps)
 			{
 				score += Math.abs(WIDTH / 2.0 - x);
 			}
+			
+			arr.get(a).score = score;
+			
+			//determines if this AI is better than the best or not according to the fitness function, and redefines which
+			//	is the best if necessary.
 			if(scoreOfBest > score)
 			{
 				indexOfBest = a;
 				scoreOfBest = score;
 			}
 		}
-		arr.get(indexOfBest).color = Color.red;
-		arr.get(indexOfBest).score = scoreOfBest;
+		
+		//color the best AI FIX THIS
+		arr.get(indexOfBest).color = BEST_AI_COLOR;
 		return simulate(arr.get(indexOfBest), count - 1, tolerance, silent);
 	}
 	
@@ -211,7 +600,7 @@ public class AI_Evolution extends Canvas
 			//the x coordinate is determined by the AI, every x coordinate has a unique y coordinate in ascending order 
 			//	(note that here, an ascending y value means going DOWN the screen), the final two parameters are width
 			//	 and height, which are the same since every step is a square
-			draw.fillRect(ai.get(step), step * STEP_SIZE, STEP_SIZE, STEP_SIZE);
+			draw.fillRect(ai.get(step), step * STEP_SIZE, AI_SIZE, AI_SIZE);
 		}
 		this.getBufferStrategy().show();
 		sleep(WAIT_BETWEEN_STEPS);
@@ -244,12 +633,15 @@ public class AI_Evolution extends Canvas
 			//the x coordinate is determined by the AI, every x coordinate has a unique y coordinate in ascending order 
 			//	(note that here, an ascending y value means going DOWN the screen), the final two parameters are width
 			//	 and height, which are the same since every step is a square
-			draw.fillRect(curstep, step * STEP_SIZE, STEP_SIZE, STEP_SIZE);
+			draw.fillRect(curstep, step * STEP_SIZE, AI_SIZE, AI_SIZE);
 			//increase the y value
 			step++;
 		}
 		this.getBufferStrategy().show();
-		sleep(WAIT_BETWEEN_GENERATIONS);
+		if(SILENT_SIMULATE)
+			sleep(WAIT_BETWEEN_GENERATIONS);
+		else
+			sleep(WAIT_AFTER_BEST);
 	}
 	
 	public void sleep(int milliseconds)
@@ -259,7 +651,7 @@ public class AI_Evolution extends Canvas
 	}
 	
 	/**
-	 * Sets the BufferStrategy for this canvas and instatiates {@link #draw}
+	 * Sets the BufferStrategy for this canvas and instantiates {@link #draw}
 	 */
 	public void setBufferStrategy()
 	{
@@ -275,27 +667,39 @@ public class AI_Evolution extends Canvas
 
 class AIEv
 {
-	static Color default_color = Color.black;
-	Color color = default_color;
+	Color color = AI_Evolution.DEFAULT_AI_COLOR;
 	double score = 0;
-	double rateOfMutation = 1.0/95.0;
 	ArrayList<Integer> steps = new ArrayList<Integer>();
-	public AIEv(ArrayList<Integer> steps, int screenWidth, int tolerance)
+	
+	/**
+	 * 
+	 * @param steps
+	 * @param screenWidth
+	 * @param tolerance The distance horizontally that the AI can move in one step.
+	 */
+	public AIEv(ArrayList<Integer> steps, int screenWidth, int tolerance, double rateOfMutation)
 	{
 		for(int num: steps)
 		{
-			if((int)(Math.random() / rateOfMutation) == 0)
+			//Checks for mutation by seeing if a random number is less than or equal to it
+			//	fun fact: this if-statement could be rewritten as "if((int)(Math.random() / rateOfMutation) == 0)"
+			if(Math.random() <= rateOfMutation)
 			{
-				int temp = (int) (num + Math.round(Math.random() * tolerance * 2 - tolerance));
-				if(temp > screenWidth)
+				//"num +" makes the new step related to its predecessor (the original AI's step). 
+				//	Math.round(Math.random() * tolerance * 2 - tolerance makes it so that there is an equal chance of 
+				//	stepping left or right (the limit of newStep as Math.random() approaches 0 is num - tolerance, whereas
+				//	the of newStep limit as Math.random() approaches 1 is num + tolerance).
+				int newStep = (int) (num + Math.round(Math.random() * tolerance * 2 - tolerance));
+				
+				if(newStep >= screenWidth)
 				{
-					temp = screenWidth - 10;//idk just keeps it from going off screen
+					newStep = screenWidth;
 				}
-				else if(temp < 0)
+				else if(newStep < 0)
 				{
-					temp = 0;
+					newStep = 0;
 				}
-				this.steps.add(temp);
+				this.steps.add(newStep);
 			}
 			else
 			{
@@ -308,7 +712,7 @@ class AIEv
 		steps = new ArrayList<Integer>();
 		for(int a = 0; a < stepsAllowed; a++)
 		{
-			int step = (int)Math.round(Math.random() * screenWidth);
+			int step = (int)Math.round(Math.random() * (screenWidth));
 			this.steps.add(step);
 		}
 	}
