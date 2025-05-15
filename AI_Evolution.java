@@ -7,9 +7,15 @@ import java.util.ArrayList;
 import java.util.InputMismatchException;
 import javax.swing.JFrame;
 
+/**
+ * This class, when constructed, runs AI simulations with either default or given parameters depending on the constructor
+ * used.
+ * @author Joshua Rissman
+ *
+ */
 public class AI_Evolution extends Canvas
 {
-	private static final long serialVersionUID = 4L;
+	private static final long serialVersionUID = 5L;
 	
 	/** The width of {@link #frame}. */
 	int WIDTH = 500;
@@ -77,14 +83,14 @@ public class AI_Evolution extends Canvas
 		
 		//the default, equivalent to new AI_Evolution(500, 500, 5, 1000, 5, 100, 1000, 50, 500, 
 		//	1.0 / 95.0, Color.black, Color.white);
-//		new AI_Evolution(); 
+		new AI_Evolution(); 
 		
 		//a user specified silent run, equivalent to new AI_Evolution(); 
-		new AI_Evolution(33 /*was 500*/, 500, 5, 1000, 5, 100, 500, 50, 500, 1.0 / 95.0, Color.black, Color.white);
+		new AI_Evolution(500, 500, 5, 1000, 5, 100, 500, 50, 500, 1.0 / 95.0, Color.black, Color.white);
 		
 		//a user specified non-silent run, equivalent to new AI_Evolution(); where SILENT_SIMULATE = false; 
-//		new AI_Evolution(500, 500, 5, 1000, 5, 100, 500, 50, 500, 2000, 10, 1.0 / 95.0, Color.red, Color.white, 
-//				Color.black);
+		new AI_Evolution(500, 500, 5, 1000, 5, 100, 500, 50, 500, 2000, 10, 1.0 / 95.0, Color.red, Color.white, 
+				Color.black);
 	}
 	
 	/**
@@ -372,7 +378,7 @@ public class AI_Evolution extends Canvas
 			throw new InputMismatchException("The wait between the steps the AI takes must not be less than 0.");
 		}
 		
-		//color overlap warning
+		//color overlap warnings
 		if(BACKGROUND_COLOR.equals(BEST_AI_COLOR))
 		{
 			System.out.println("WARNING: BACKGROUND COLOR AND BEST AI COLOR ARE THE SAME. THEREFORE THE BEST"
@@ -471,6 +477,7 @@ public class AI_Evolution extends Canvas
 		frame.add(this);
 		frame.setVisible(true);	
 		
+		//fixes WIDTH so that it matches the actual frame
 		if(frame.getWidth() != WIDTH)
 		{
 			int frameWidth = frame.getWidth();
@@ -479,6 +486,7 @@ public class AI_Evolution extends Canvas
 					WIDTH, frameWidth, frameWidth);
 			WIDTH = frameWidth;
 		}
+		//fixes HEIGHT so that it matches the actual frame
 		if(frame.getHeight() != HEIGHT)
 		{
 			int frameHeight = frame.getHeight();
@@ -529,22 +537,40 @@ public class AI_Evolution extends Canvas
 		frame.setTitle(String.format("Finished at Generation %d!", GEN_COUNTER));
 	}
 	
+	/**
+	 * Runs {@code count} simulations based on {@code bestAI}.
+	 * @param bestAI The best AI found thus far. This will be used as a basis for the future generations.
+	 * @param count How many generations should pass before returning the best AI found.
+	 * @param tolerance How far the AI can step horizontally.
+	 * @param silent Whether or not this is a silent run. <b>{@code true}</b> if it is silent, <b>{@code false}</b>
+	 * if it is not.
+	 * @return the best AI found within {@code count} simulations.
+	 */
 	public AIEv simulate(AIEv bestAI, int count, int tolerance, boolean silent)
 	{
+		//count is the variable that counts down from VIEW_RATE so that an update on the best AI will be given at regular
+		//	intervals. Therefore, when count reaches zero, return the best AI found thus far.
 		if(count == 0)
 		{
 			return bestAI;
 		}
 		
+		//increase the label for this generation
 		GEN_COUNTER++;
 		
+		//make an ArrayList to hold all the AI for this generation
 		ArrayList<AIEv> arr = new ArrayList<AIEv>();
+		
+		//add new AI based on the best from the previous generation. Since that best AI will be included, start from 1.
 		for(int a = 1; a < AI_COUNT; a++)
 		{
 			arr.add(new AIEv(bestAI.steps, USABLE_WIDTH, tolerance, MUTATION_RATE));
 		}
+		//add the best AI to the ArrayList
 		arr.add(bestAI);
 		
+		//If this is a non-silent run, then the following code displays all the steps in between the VIEW_RATE number of
+		//	generations.
 		if(!silent)
 		{
 			frame.setTitle(String.format("Generation %d", GEN_COUNTER));
@@ -571,7 +597,9 @@ public class AI_Evolution extends Canvas
 				score += Math.abs(WIDTH / 2.0 - x);
 			}
 			
-			arr.get(a).score = score;
+			//code to set the score of the AI. Currently has no function, but functionality may be added in a future
+			//	update
+//			arr.get(a).score = score;
 			
 			//determines if this AI is better than the best or not according to the fitness function, and redefines which
 			//	is the best if necessary.
@@ -582,17 +610,26 @@ public class AI_Evolution extends Canvas
 			}
 		}
 		
-		//color the best AI FIX THIS
+		//color the best AI
 		arr.get(indexOfBest).color = BEST_AI_COLOR;
+		
+		//call this method again until count is zero. Once count is zero, the best AI found within the given VIEW_RATE
+		//	will have been found.
 		return simulate(arr.get(indexOfBest), count - 1, tolerance, silent);
 	}
 	
+	/**
+	 * Draws all given AI for a single given step for visual comparison. This will only be used in non-silent runs.
+	 * @param step The step to view.
+	 * @param arr An ArrayList of AI of which all will have this step drawn.
+	 */
 	public void render(int step, ArrayList<AIEv> arr)
 	{
 		//draw the background
 		draw.setColor(BACKGROUND_COLOR);
 		draw.fillRect(0, 0, WIDTH, HEIGHT);
 		
+		//draw all AI in arr but only their current step
 		for(AIEv ai: arr)
 		{
 			//set color for the AI
@@ -603,9 +640,17 @@ public class AI_Evolution extends Canvas
 			draw.fillRect(ai.get(step), step * STEP_SIZE, AI_SIZE, AI_SIZE);
 		}
 		this.getBufferStrategy().show();
+		
+		//a user determined pause to allow for greater or lesser visibility of each individual step
 		sleep(WAIT_BETWEEN_STEPS);
 	}
 	
+	/**
+	 * A method that checks if an AI is "perfect" determined by if every step falls in the center (integer division). 
+	 * @param ai 
+	 * @return a boolean. <b>{@code true}</b> if every step of the AI lands in the center of the canvas. Otherwise, 
+	 * <b>{@code false}</b>.
+	 */
 	public boolean isPerfect(AIEv ai)
 	{
 		int center = WIDTH / 2;
@@ -617,7 +662,11 @@ public class AI_Evolution extends Canvas
 		return true;
 	}
 	
-	public void plotBest(AIEv bestAI) throws NullPointerException
+	/**
+	 * Given an AI, shows all the steps it has taken and colors it {@link #BEST_AI_COLOR}.
+	 * @param bestAI The AI to be drawn.
+	 */
+	public void plotBest(AIEv bestAI)
 	{
 		
 		//draw the background
@@ -637,13 +686,20 @@ public class AI_Evolution extends Canvas
 			//increase the y value
 			step++;
 		}
+		
 		this.getBufferStrategy().show();
+		
 		if(SILENT_SIMULATE)
 			sleep(WAIT_BETWEEN_GENERATIONS);
 		else
 			sleep(WAIT_AFTER_BEST);
 	}
 	
+	/**
+	 * A sleep method meant to halt the program until the set amount of time has passed. This method is primarily used 
+	 * for waiting between drawing to the screen for the user to see what has been drawn.
+	 * @param milliseconds An int representing the number of milliseconds to be awaited.
+	 */
 	public void sleep(int milliseconds)
 	{
 		long time = System.currentTimeMillis() + milliseconds;
@@ -665,19 +721,34 @@ public class AI_Evolution extends Canvas
 	}
 }
 
+/**
+ * This class is the actual AI to be used by AI_Evolution
+ * @author Joshua Rissman
+ *
+ */
 class AIEv
 {
+	/** The color value AI will take by default upon creation */
 	Color color = AI_Evolution.DEFAULT_AI_COLOR;
+	/** 
+	 * This does not yet do anything. I have left it in case I decide to expand on the functionality and show scores or 
+	 * something to that effect.
+	 */
 	double score = 0;
+	/** Holds the integer representation for the horizontal (x-values) of the steps that make up this AI. */
 	ArrayList<Integer> steps = new ArrayList<Integer>();
 	
 	/**
-	 * 
-	 * @param steps
-	 * @param screenWidth
+	 * A constructor that builds an AI based on a given AI that it will randomly deviate from depending on mutation rate
+	 * and step size ({@code tolerance})
+	 * @param steps An ArrayList of the steps of a parent AI for this AI to be based on.
+	 * @param frameWidth The width of the frame this AI is drawn in. Determines the limits of how far to the left and 
+	 * right it can go. 
 	 * @param tolerance The distance horizontally that the AI can move in one step.
+	 * @param rateOfMutation The mutation rate of this AI. In other words, how likely it is that one of its parents steps
+	 * are to be different from its own.
 	 */
-	public AIEv(ArrayList<Integer> steps, int screenWidth, int tolerance, double rateOfMutation)
+	public AIEv(ArrayList<Integer> steps, int frameWidth, int tolerance, double rateOfMutation)
 	{
 		for(int num: steps)
 		{
@@ -686,14 +757,15 @@ class AIEv
 			if(Math.random() <= rateOfMutation)
 			{
 				//"num +" makes the new step related to its predecessor (the original AI's step). 
-				//	Math.round(Math.random() * tolerance * 2 - tolerance makes it so that there is an equal chance of 
+				//	Math.round(Math.random() * tolerance * 2 - tolerance) makes it so that there is an equal chance of 
 				//	stepping left or right (the limit of newStep as Math.random() approaches 0 is num - tolerance, whereas
 				//	the of newStep limit as Math.random() approaches 1 is num + tolerance).
 				int newStep = (int) (num + Math.round(Math.random() * tolerance * 2 - tolerance));
 				
-				if(newStep >= screenWidth)
+				//prevent the newStep from exceeding the width of the frame by rounding it to either edge
+				if(newStep >= frameWidth)
 				{
-					newStep = screenWidth;
+					newStep = frameWidth;
 				}
 				else if(newStep < 0)
 				{
@@ -707,15 +779,29 @@ class AIEv
 			}
 		}
 	}
-	public AIEv(int stepsAllowed, int screenWidth)
+	
+	/**
+	 * A constructor that builds and AI from scratch. This AI has no limit on how far it can step horizontally so that it 
+	 * may start off purely random.
+	 * @param steps An ArrayList of the steps of a parent AI for this AI to be based on.
+	 * @param frameWidth The width of the frame this AI is drawn in. Determines the limits of how far to the left and 
+	 * right it can go.
+	 */
+	public AIEv(int stepsAllowed, int frameWidth)
 	{
 		steps = new ArrayList<Integer>();
 		for(int a = 0; a < stepsAllowed; a++)
 		{
-			int step = (int)Math.round(Math.random() * (screenWidth));
+			int step = (int)Math.round(Math.random() * frameWidth);
 			this.steps.add(step);
 		}
 	}
+	
+	/**
+	 * A standard "getter" method so outside classes can access the steps without modifying them.
+	 * @param step The index of the step the user wants to retrieve
+	 * @return an int which represents the horizontal placement (x-value) of this particular step.
+	 */
 	public int get(int step)
 	{
 		return steps.get(step);
