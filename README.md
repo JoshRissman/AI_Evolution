@@ -2,6 +2,17 @@
 
 A simple Java implementation of a genetic algorithm that teaches AI agents to walk in a straight line. Over successive generations, the agents evolve their behavior using randomized mutation and fitness-based selection.
 
+## Demonstration gifs
+
+A demonstration of the default constructor for AI_Evolution.<br>
+<img src="Demo-gifs/Default-Run.gif" width="50%" height="50%" alt="Default Constructor Demo GIF" />
+
+A demonstration of the constructor for AI_Evolution used in AI_Evolution.java on line 89.<br>
+<img src="Demo-gifs/Silent-Run.gif" width="50%" height="50%" alt="Silent Constructor Demo GIF" />
+
+A demonstration of the constructor for AI_Evolution used in AI_Evolution.java on line 92. With the exception that the view_rate parameter was set to 5 instead of 100 for demonstration purposes. (Note the framerate of the gif and the rendering of steps may not match, causing the output to look slower and less helpful than it would when being run)<br>
+<img src="Demo-gifs/Non-Silent-Run.gif" width="50%" height="50%" alt="Non-Silent Constructor Demo GIF" />
+
 ## Motivation
 
 This project was built as a personal experiment to better understand genetic algorithms and evolutionary learning. It visualizes how random mutation and selection can produce increasingly effective behavior over time, even in a simple environment.
