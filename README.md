@@ -36,7 +36,7 @@ This project was built as a personal experiment to better understand genetic alg
 1. Clone this repository:
 git clone https://github.com/JoshRissman/AI_Evolution.git
 
-2. (Optional) Inside the AI_Evolution.java files's AI_Evolution class's void main(String[] args) function, change the call(s) to the constructors of AI_Evolution in accordance to your desired parameters.
+2. (Optional) Inside AI_Evolution.java, in the AI_Evolution class' void main(String[] args) function, change the call(s) to the constructors of AI_Evolution in accordance to your desired parameters.
 
 3. Compile and run the AI_Evolution.java class:
 javac AI_Evolution.java
