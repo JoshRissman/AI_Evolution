@@ -10,7 +10,7 @@ A demonstration of the default constructor for AI_Evolution.<br>
 A demonstration of the constructor for AI_Evolution used in AI_Evolution.java on line 89.<br>
 <img src="Demo-gifs/Silent-Run.gif" width="50%" height="50%" alt="Silent Constructor Demo GIF" />
 
-A demonstration of the constructor for AI_Evolution used in AI_Evolution.java on line 92. With the exception that the view_rate parameter was set to 5 instead of 100 for demonstration purposes. (Note the framerate of the gif and the rendering of steps may not match, causing the output to look slower and less helpful than it would when being run)<br>
+A demonstration of the constructor for AI_Evolution used in AI_Evolution.java on line 92 with the exception that the view_rate parameter was set to 5 instead of 100 for demonstration purposes. (Note the framerate of the gif and the rendering of steps may not match, causing the output to look slower and less helpful than it would when being run)<br>
 <img src="Demo-gifs/Non-Silent-Run.gif" width="50%" height="50%" alt="Non-Silent Constructor Demo GIF" />
 
 ## Motivation
