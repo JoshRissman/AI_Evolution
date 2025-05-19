@@ -39,8 +39,10 @@ git clone https://github.com/JoshRissman/AI_Evolution.git
 2. (Optional) Inside AI_Evolution.java, in the AI_Evolution class' void main(String[] args) function, change the call(s) to the constructors of AI_Evolution in accordance to your desired parameters.
 
 3. Compile and run the AI_Evolution.java class:
-javac AI_Evolution.java
-java AI_Evolution
+
+    `javac AI_Evolution.java`
+
+    `java AI_Evolution`
 
 > Make sure you have Java installed and set up in your PATH.
 
