@@ -55,8 +55,3 @@ git clone https://github.com/JoshRissman/AI_Evolution.git
 
 © 2025 Josh Rissman. This code is made available for viewing purposes only. All rights reserved.  
 **No permission is granted to use, copy, modify, or distribute this code.**
-
-## Contact
-
-If you'd like to ask questions or discuss the project, feel free to reach out:  
-[LinkedIn](https://www.linkedin.com/in/joshua-rissman)
